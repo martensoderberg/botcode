@@ -10,7 +10,7 @@ def loop():
     ser.write(outString)
     result = ser.read()
     print("Rcvd: " + result)
-    i++
+    i = i + 1
     ser.close()
 
 loop()
