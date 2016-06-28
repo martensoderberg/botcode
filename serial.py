@@ -1,4 +1,4 @@
-import serial
+from serial import serial
 
 def loop():
   ser = serial.Serial('/dev/ttyACM0', 9600)
