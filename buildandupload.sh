@@ -1,2 +1,1 @@
-ino build -m leonardo
-ino upload -m leonardo
+ino build -m leonardo && ino upload -m leonardo
