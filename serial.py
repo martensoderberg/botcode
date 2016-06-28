@@ -1,13 +1,16 @@
 import serial
 
 def loop():
-  serial = serial.Serial('/dev/ttyACM0', 9600)
+  ser = serial.Serial('/dev/ttyACM0', 9600)
+  i = 0
 
-  while True:
+  while i < 100:
     outString = b"Hello"
     print("Sent: " + outString)
-    serial.write(outString)
-    result = serial.read()
+    ser.write(outString)
+    result = ser.read()
     print("Rcvd: " + result)
+    i++
+    ser.close()
 
 loop()
