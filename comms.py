@@ -1,10 +1,9 @@
 import serial
 import time
 
-def defineArduinoConnection(portNumber):
-  portName = "/dev/ttyACM" + str(portNumber)
+def defineArduinoConnection(portName):
   ser = serial.Serial(
-    port = portName
+    port = portName,
     baudrate = 9600,
     parity = serial.PARITY_NONE,
     stopbits = serial.STOPBITS_ONE,
@@ -17,19 +16,24 @@ def defineArduinoConnection(portNumber):
   return ser
 
 def tryArduinoConnection():
-  for portNumber in [1, 2, 3, 4]:
+  for portNumber in [0, 1, 2, 3]:
     try:
-      ser = defineArduinoConnection(portNumber)
+      portName = "/dev/ttyACM" + str(portNumber)
+      print("Attempting to connect to arduino on " + portName + "... ",end="")
+      ser = defineArduinoConnection(portName)
+      print("succeded")
       return (True, ser) # success
     except:
+      print("failed")
       continue
-  return (False, ser) # nothing found
+  return (False, None) # nothing found
 
 def main():
   (success, ser) = tryArduinoConnection()
   if not success:
     print("Could not connect to Arduino, exiting")
     exit(1)
+  i = 0
   while i < 100:
     command = bytes([1])
     print("Sent: 1")
