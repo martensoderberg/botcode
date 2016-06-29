@@ -11,13 +11,15 @@ void loop() {
   if (Serial.available()) {
     incomingByte = Serial.read(); // Read input
     count++;
+    byte reply;
     switch (incomingByte) {
       case 1:
-        Serial.write("Go forth!");
+        reply = 0;
         break;
       default:
-        Serial.write("What?");
+        reply = 1;
         break;
     }
+    Serial.write(reply);
   }
 }
