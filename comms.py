@@ -23,7 +23,7 @@ def tryArduinoConnection():
       return (True, ser) # success
     except:
       continue
-  return (False, ser) # nothing found
+  return (False, None) # nothing found
 
 def main():
   (success, ser) = tryArduinoConnection()
