@@ -33,9 +33,12 @@ def tryArduinoConnection():
 # over an already-established serial port (ser)
 class ArduinoCommsThread(threading.Thread):
   def __init__(self, ser):
+    threading.Thread.__init__(self)
     self.ser = ser
 
   def run(self):
+    ser = self.ser
+    i = 0
     while i < 100:
       command = "Hello"
       print("Sent: " + command)
