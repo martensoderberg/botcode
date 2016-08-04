@@ -25,23 +25,21 @@ void loop() {
 }
 
 void handleSerialMessage() {
-  // check if data has been sent from the computer
-  if (messageExists) {
-    messageExists = false;
-    if (strcmp(msgBuf,"Hello") == 0) {
-      // The message was "Hello"
-      Serial.print("Hey there handsome!");
-    } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
-      // The message beegins with "LED:"
-      // This message should be on the form "LED:r:g:b"
+  if (strcmp(msgBuf,"Hello") == 0) {
+    // The message was "Hello"
+    Serial.print("Hey there handsome!");
+  } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
+    // The message beegins with "LED:"
+    // This message should be on the form "LED:r:g:b"
 
-    } else {
-      Serial.print("Ohai");
-    }
-    byte stopByte = 0;
-    Serial.write(stopByte);
-    msgLen = 0; // reset the message length counter
+  } else {
+    Serial.print("Ohai");
   }
+  byte stopByte = 0;
+  Serial.write(stopByte);
+
+  msgLen = 0; // reset the message length counter
+  messageExists = false;
 }
 
 void checkSerialPort() {
