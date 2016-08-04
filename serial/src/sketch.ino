@@ -9,7 +9,7 @@ Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN_NO, NEO_GRB + NEO_KHZ800);
 
 char msgBuf[MESSAGE_BUFFER_SIZE];
 int msgLen;
-boolean stringComplete = false;
+boolean messageExists = false;
 
 void setup() {
   Serial.begin(9600);
@@ -19,10 +19,15 @@ void setup() {
 
 void loop() {
   checkSerialPort();
+  if (messageExists) {
+    handleSerialMessage();
+  }
+}
 
+void handleSerialMessage() {
   // check if data has been sent from the computer
-  if (stringComplete) {
-    stringComplete = false;
+  if (messageExists) {
+    messageExists = false;
     if (strcmp(msgBuf,"Hello") == 0) {
       // The message was "Hello"
       Serial.print("Hey there handsome!");
@@ -44,7 +49,7 @@ void checkSerialPort() {
     char inChar = (char) Serial.read();
     if (inChar == 0) {
       msgBuf[msgLen] = 0; // terminating character
-      stringComplete = true;
+      messageExists = true;
     } else {
       msgBuf[msgLen] = inChar;
       msgLen++;
