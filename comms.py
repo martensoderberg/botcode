@@ -2,10 +2,9 @@ import serial
 import time
 import thread
 
-def defineArduinoConnection(portNumber):
-  portName = "/dev/ttyACM" + str(portNumber)
+def defineArduinoConnection(portName):
   ser = serial.Serial(
-    port = portName
+    port = portName,
     baudrate = 9600,
     parity = serial.PARITY_NONE,
     stopbits = serial.STOPBITS_ONE,
@@ -18,14 +17,17 @@ def defineArduinoConnection(portNumber):
   return ser
 
 def tryArduinoConnection():
-  for portNumber in [1, 2, 3, 4]:
+  for portNumber in [0, 1, 2, 3]:
     try:
-      ser = defineArduinoConnection(portNumber)
+      portName = "/dev/ttyACM" + str(portNumber)
+      print("Attempting to connect to arduino on " + portName + "... ",end="")
+      ser = defineArduinoConnection(portName)
+      print("succeded")
       return (True, ser) # success
     except:
+      print("failed")
       continue
   return (False, None) # nothing found
-
 
 # This class handles communications with the arduino controller
 # over an already-established serial port (ser)
@@ -35,13 +37,13 @@ class ArduinoCommsThread:
 
   def run(self):
     while i < 100:
-      command = bytes([1])
-      print("Sent: 1")
-      ser.write(command)
+      command = "Hello"
+      print("Sent: " + command)
+      ser.write(str.encode(command)) # send a bytes object of the string
+      ser.write(str.encode("\n")) # send a newline
       time.sleep(0.05)
-      returnedBytes = ser.read(ser.inWaiting())
-      resultString = returnedBytes.decode("utf-8")
-      print("Rcvd: " + str(resultString))
+      returnedBytes = ser.read(1)
+      print("Rcvd: " + str(returnedBytes))
       i = i + 1
     ser.close()
 
@@ -53,5 +55,4 @@ def main():
   else:
     print("Could not connect to Arduino, exiting")
     exit(1)
-
 main()
