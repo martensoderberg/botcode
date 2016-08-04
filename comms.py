@@ -31,7 +31,7 @@ def tryArduinoConnection():
 
 # This class handles communications with the arduino controller
 # over an already-established serial port (ser)
-class ArduinoCommsThread:
+class ArduinoCommsThread(threading.Thread):
   def __init__(self, ser):
     self.ser = ser
 
