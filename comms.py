@@ -1,6 +1,6 @@
 import serial
 import time
-import thread
+import threading
 
 def defineArduinoConnection(portName):
   ser = serial.Serial(
