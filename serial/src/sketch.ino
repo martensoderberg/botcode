@@ -1,25 +1,35 @@
-byte count;
-byte incomingByte;
+String inputString = "";
+boolean stringComplete = false;
 
 void setup() {
-  count = 0;
   Serial.begin(9600);
+  inputString.reserve(200); // reserves space
 }
 
 void loop() {
    // check if data has been sent from the computer
-  if (Serial.available()) {
-    incomingByte = Serial.read(); // Read input
-    count++;
-    byte reply;
-    switch (incomingByte) {
-      case 1:
-        reply = 0;
-        break;
-      default:
-        reply = 1;
-        break;
+  if (stringComplete) {
+    stringComplete = false;
+    byte reply = 0;
+    if (inputString.equals("Hello")) {
+      Serial.print("A");
+      //reply = 1;
+    } else {
+      Serial.print("B");
+      //reply = 2;
     }
-    Serial.write(reply);
+    // Serial.write(reply);
+    inputString = "";
+  }
+}
+
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    if (inChar == '\n') {
+      stringComplete = true;
+    } else {
+      inputString += inChar;
+    }
   }
 }
