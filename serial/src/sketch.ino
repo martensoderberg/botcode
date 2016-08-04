@@ -7,7 +7,9 @@ void setup() {
 }
 
 void loop() {
-   // check if data has been sent from the computer
+  checkSerialPort();
+
+  // check if data has been sent from the computer
   if (stringComplete) {
     stringComplete = false;
     byte reply = 0;
@@ -23,10 +25,10 @@ void loop() {
   }
 }
 
-void serialEvent() {
+void checkSerialPort() {
   while (Serial.available()) {
-    char inChar = (char)Serial.read();
-    if (inChar == '\n') {
+    char inChar = (char) Serial.read();
+    if (inChar == 0) {
       stringComplete = true;
     } else {
       inputString += inChar;

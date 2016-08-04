@@ -43,7 +43,7 @@ class ArduinoCommsThread(threading.Thread):
       command = "Hello"
       print("Sent: " + command)
       ser.write(str.encode(command)) # send a bytes object of the string
-      ser.write(str.encode("\n")) # send a newline
+      ser.write(bytes([0]))
       time.sleep(0.05)
       returnedBytes = ser.read(1)
       print("Rcvd: " + str(returnedBytes))
