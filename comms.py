@@ -36,17 +36,35 @@ class ArduinoCommsThread(threading.Thread):
     threading.Thread.__init__(self)
     self.ser = ser
 
+  def sendMessage(self, message):
+    ser = self.ser
+    ser.write(str.encode(message))
+    ser.write(bytes([0])) # terminate message with zero-byte (0x00)
+
+  def receiveMessage(self):
+    ser = self.ser
+    frame = bytearray()
+    stopByteEncountered = False
+    while not stopByteEncountered:
+      byte = ser.read(1)
+      if byte[0] == 0:
+        stopByteEncountered = True
+      else:
+        frame += byte
+    return frame.decode("utf-8")
+
   def run(self):
     ser = self.ser
     i = 0
     while i < 100:
-      command = "Hello"
+      if (i % 2) == 1:
+        command = "Hello"
+      else:
+        command = "Whattup"
       print("Sent: " + command)
-      ser.write(str.encode(command)) # send a bytes object of the string
-      ser.write(bytes([0]))
-      time.sleep(0.05)
-      returnedBytes = ser.read(1)
-      print("Rcvd: " + str(returnedBytes))
+      self.sendMessage(command)
+      reply = self.receiveMessage()
+      print("Rcvd: " + reply)
       i = i + 1
     ser.close()
 

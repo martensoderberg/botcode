@@ -12,15 +12,13 @@ void loop() {
   // check if data has been sent from the computer
   if (stringComplete) {
     stringComplete = false;
-    byte reply = 0;
     if (inputString.equals("Hello")) {
-      Serial.print("A");
-      //reply = 1;
+      Serial.print("Hey there handsome!");
     } else {
-      Serial.print("B");
-      //reply = 2;
+      Serial.print("Ohai");
     }
-    // Serial.write(reply);
+    byte stopByte = 0;
+    Serial.write(stopByte);
     inputString = "";
   }
 }
