@@ -5,6 +5,7 @@ import threading
 
 startTime = datetime.datetime.now()
 connected = False
+keepGoing = True
 
 def getTimestamp():
   timeNow = datetime.datetime.now()
@@ -50,6 +51,7 @@ class ArduinoCommsThread(threading.Thread):
     ser = self.ser
     ser.write(str.encode(message))
     ser.write(bytes([0])) # terminate message with zero-byte (0x00)
+    print(getTimestamp() + ": Sent: " + message)
 
   def receiveMessage(self):
     ser = self.ser
@@ -61,7 +63,9 @@ class ArduinoCommsThread(threading.Thread):
         stopByteEncountered = True
       else:
         frame += byte
-    return frame.decode("utf-8")
+    reply = frame.decode("utf-8")
+    print(getTimestamp() + ": Rcvd: " + reply)
+    return reply
 
   def establishConnection(self):
     (success, ser) = self.tryArduinoConnection()
@@ -73,26 +77,31 @@ class ArduinoCommsThread(threading.Thread):
   def run(self):
     self.establishConnection()
     i = 0
-    while i < 10000:
+    while keepGoing:
       if (i % 2) == 1:
-        command = "LED:0:0:0"
+        command = "LED:100:15:15"
       else:
         command = "LED:15:105:255"
-      print(getTimestamp() + ": Sent: " + command)
       try:
         self.sendMessage(command)
-        reply = self.receiveMessage()
-        print(getTimestamp() + ": Rcvd: " + reply)
+        self.receiveMessage()
       except serial.SerialException:
         self.establishConnection()
-      except (KeyboardInterrupt, SystemExit):
-        # Handle SIGINT
-        self.ser.close()
       i = i + 1
+    self.sendMessage("HALT")
+    self.receiveMessage()
     self.ser.close()
 
 def main():
+  global keepGoing
   commsThread = ArduinoCommsThread()
+  commsThread.daemon = True
   commsThread.start()
+  try:
+    commsThread.join()
+  except KeyboardInterrupt:
+    keepGoing = False
+  finally:
+    commsThread.join()
 
 main()

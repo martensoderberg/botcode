@@ -28,6 +28,10 @@ void handleMsg() {
   if (strcmp(msgBuf,"Hello") == 0) {
     // The message was "Hello"
     Serial.print("Hey there handsome!");
+  } else if (strcmp(msgBuf, "HALT") == 0) {
+    // We need to stop everything we're doing!
+    handleHaltMsg();
+    Serial.print("HAMMERZEIT");
   } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
     // The message beegins with "LED:"
     // This message should be on the form "LED:r:g:b"
@@ -43,6 +47,14 @@ void handleMsg() {
   msgExists = false;
 }
 
+// This function stops everything the bot is doing right now
+void handleHaltMsg() {
+  // TODO: This function should do more things when we have more functionality.
+  led.setPixelColor(0, led.Color(0, 0, 0));
+  led.show();
+}
+
+// We got a LED message. Handle it!
 void handleLEDMsg() {
   char *p;
   p = strtok(msgBuf, ":"); // This will just say "LED"
