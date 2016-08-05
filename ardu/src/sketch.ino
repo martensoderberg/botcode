@@ -50,7 +50,7 @@ void handleMsg() {
 // This function stops everything the bot is doing right now
 void handleHaltMsg() {
   // TODO: This function should do more things when we have more functionality.
-  led.setPixelColor(0, led.Color(0, 0, 0));
+  led.setPixelColor(0, 0, 0, 0);
   led.show();
 }
 
@@ -64,7 +64,7 @@ void handleLEDMsg() {
   int g = atoi(strtok(NULL, ":"));
   int b = atoi(strtok(NULL, ":"));
 
-  led.setPixelColor(0, led.Color(r, g, b));
+  led.setPixelColor(0, r, g, b);
   led.show();
 }
 
