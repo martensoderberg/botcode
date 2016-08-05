@@ -97,10 +97,11 @@ class ArduinoCommsThread(threading.Thread):
     self.establishConnection()
     i = 0
     while shouldIKeepGoing():
-      if (i % 2) == 1:
-        command = "LED:100:15:15"
-      else:
-        command = "LED:15:105:255"
+      hectoseconds = int(round(time.time() * 100))
+      r = (hectoseconds + 50) % 255
+      g = (hectoseconds - 50) % 255
+      b =  hectoseconds       % 255
+      command = "LED:" + str(r) + ":" + str(g) + ":" + str(b)
       try:
         self.sendMessage(command)
         self.receiveMessage()
