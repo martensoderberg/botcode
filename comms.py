@@ -63,14 +63,15 @@ class ArduinoCommsThread(threading.Thread):
         frame += byte
     return frame.decode("utf-8")
 
-  def run(self):
-    # Establish connection
+  def establishConnection(self):
     (success, ser) = self.tryArduinoConnection()
     while not success:
       time.sleep(1)
       (success, ser) = self.tryArduinoConnection()
     self.ser = ser
 
+  def run(self):
+    self.establishConnection()
     i = 0
     while i < 10000:
       if (i % 2) == 1:
@@ -78,11 +79,14 @@ class ArduinoCommsThread(threading.Thread):
       else:
         command = "LED:15:105:255"
       print(getTimestamp() + ": Sent: " + command)
-      self.sendMessage(command)
-      reply = self.receiveMessage()
-      print(getTimestamp() + ": Rcvd: " + reply)
+      try:
+        self.sendMessage(command)
+        reply = self.receiveMessage()
+        print(getTimestamp() + ": Rcvd: " + reply)
+      except serial.SerialException:
+        self.establishConnection()
       i = i + 1
-    ser.close()
+    self.ser.close()
 
 def main():
   commsThread = ArduinoCommsThread()
