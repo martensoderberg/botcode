@@ -30,6 +30,7 @@ def halt():
 class ArduinoCommsThread(threading.Thread):
   def __init__(self):
     threading.Thread.__init__(self)
+    self.connected = False
 
   def defineArduinoConnection(self, portName):
     ser = serial.Serial(
@@ -90,12 +91,12 @@ class ArduinoCommsThread(threading.Thread):
       else:
         exit(0)
     self.ser = ser
+    self.connected = True
 
   def run(self):
     self.establishConnection()
     i = 0
     while shouldIKeepGoing():
-
       if (i % 2) == 1:
         command = "LED:100:15:15"
       else:
@@ -104,11 +105,13 @@ class ArduinoCommsThread(threading.Thread):
         self.sendMessage(command)
         self.receiveMessage()
       except serial.SerialException:
+        self.connected = False
         self.establishConnection()
       i = i + 1
-    self.sendMessage("HALT")
-    self.receiveMessage()
-    self.ser.close()
+    if self.connected:
+      self.sendMessage("HALT")
+      self.receiveMessage()
+      self.ser.close()
 
 def main():
   commsThread = ArduinoCommsThread()
