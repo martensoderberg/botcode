@@ -9,7 +9,7 @@ Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN_NO, NEO_GRB + NEO_KHZ800);
 
 char msgBuf[MESSAGE_BUFFER_SIZE];
 int msgLen;
-boolean messageExists = false;
+boolean msgExists = false;
 
 void setup() {
   Serial.begin(9600);
@@ -19,16 +19,17 @@ void setup() {
 
 void loop() {
   checkSerialPort();
-  if (messageExists) {
-    handleSerialMessage();
+  if (msgExists) {
+    handleMsg();
   }
 }
 
-void handleSerialMessage() {
+void handleMsg() {
   if (strcmp(msgBuf,"Hello") == 0) {
     // The message was "Hello"
     Serial.print("Hey there handsome!");
   } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
+    handleLEDMsg();
     // The message beegins with "LED:"
     // This message should be on the form "LED:r:g:b"
 
@@ -39,7 +40,19 @@ void handleSerialMessage() {
   Serial.write(stopByte);
 
   msgLen = 0; // reset the message length counter
-  messageExists = false;
+  msgExists = false;
+}
+
+void handleLEDMsg() {
+  char *p;
+  p = strtok(msgBuf, ":"); // This will just say "LED"
+  // We expect 3 more delimited values (R, G, and B)
+  // Note that strtok "remembers" the result of the last call.
+  int r = atoi(strtok(NULL, ":"));
+  int g = atoi(strtok(NULL, ":"));
+  int b = atoi(strtok(NULL, ":"));
+
+  led.setPixelColor(0, pixels.Color(r, g, b));
 }
 
 void checkSerialPort() {
@@ -47,7 +60,7 @@ void checkSerialPort() {
     char inChar = (char) Serial.read();
     if (inChar == 0) {
       msgBuf[msgLen] = 0; // terminating character
-      messageExists = true;
+      msgExists = true;
     } else {
       msgBuf[msgLen] = inChar;
       msgLen++;
