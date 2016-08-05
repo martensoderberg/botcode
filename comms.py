@@ -4,6 +4,7 @@ import datetime
 import threading
 
 startTime = datetime.datetime.now()
+connected = False
 
 def getTimestamp():
   timeNow = datetime.datetime.now()
@@ -37,9 +38,12 @@ class ArduinoCommsThread(threading.Thread):
         ser = self.defineArduinoConnection(portName)
         print("succeded")
         return (True, ser) # success
-      except:
+      except serial.SerialException:
         print("failed")
         continue
+      except Exception as exception:
+        print("failed for an unknown reason!")
+        print(type(exception))
     return (False, None) # nothing found
 
   def sendMessage(self, message):
