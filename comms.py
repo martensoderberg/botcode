@@ -6,10 +6,25 @@ import threading
 startTime = datetime.datetime.now()
 connected = False
 keepGoing = True
+keepGoingLock = threading.Lock()
 
 def getTimestamp():
   timeNow = datetime.datetime.now()
   return str(timeNow - startTime)
+
+def shouldIKeepGoing():
+  global keepGoingLock, keepGoing
+  wellShouldI = True
+  keepGoingLock.acquire() # begin mutex zone
+  wellShouldI = keepGoing
+  keepGoingLock.release() # stop mutex zone
+  return wellShouldI
+
+def halt():
+  global keepGoingLock, keepGoing
+  keepGoingLock.acquire()
+  keepGoing = False
+  keepGoingLock.release()
 
 # This class handles communications with the arduino controller
 # over an already-established serial port (ser)
@@ -77,7 +92,7 @@ class ArduinoCommsThread(threading.Thread):
   def run(self):
     self.establishConnection()
     i = 0
-    while keepGoing:
+    while shouldIKeepGoing():
       if (i % 2) == 1:
         command = "LED:100:15:15"
       else:
@@ -93,14 +108,13 @@ class ArduinoCommsThread(threading.Thread):
     self.ser.close()
 
 def main():
-  global keepGoing
   commsThread = ArduinoCommsThread()
   commsThread.daemon = True
   commsThread.start()
   try:
     commsThread.join()
   except KeyboardInterrupt:
-    keepGoing = False
+    halt()
   finally:
     commsThread.join()
 
