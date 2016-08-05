@@ -66,7 +66,6 @@ void handleLEDMsg() {
 
   led.setPixelColor(0, led.Color(r, g, b));
   led.show();
-  delay(100); // This will have to go later on.
 }
 
 void checkSerialPort() {

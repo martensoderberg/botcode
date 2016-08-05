@@ -4,7 +4,6 @@ import datetime
 import threading
 
 startTime = datetime.datetime.now()
-connected = False
 keepGoing = True
 keepGoingLock = threading.Lock()
 
@@ -85,14 +84,18 @@ class ArduinoCommsThread(threading.Thread):
   def establishConnection(self):
     (success, ser) = self.tryArduinoConnection()
     while not success:
-      time.sleep(1)
-      (success, ser) = self.tryArduinoConnection()
+      if shouldIKeepGoing():
+        time.sleep(0.2)
+        (success, ser) = self.tryArduinoConnection()
+      else:
+        exit(0)
     self.ser = ser
 
   def run(self):
     self.establishConnection()
     i = 0
     while shouldIKeepGoing():
+
       if (i % 2) == 1:
         command = "LED:100:15:15"
       else:
