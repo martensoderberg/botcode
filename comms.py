@@ -85,6 +85,9 @@ class ArduinoCommsThread(threading.Thread):
         print(getTimestamp() + ": Rcvd: " + reply)
       except serial.SerialException:
         self.establishConnection()
+      except (KeyboardInterrupt, SystemExit):
+        # Handle SIGINT
+        self.ser.close()
       i = i + 1
     self.ser.close()
 
