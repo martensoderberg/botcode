@@ -52,7 +52,7 @@ void handleLEDMsg() {
   int g = atoi(strtok(NULL, ":"));
   int b = atoi(strtok(NULL, ":"));
 
-  led.setPixelColor(0, pixels.Color(r, g, b));
+  led.setPixelColor(0, led.Color(r, g, b));
 }
 
 void checkSerialPort() {
