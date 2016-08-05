@@ -58,9 +58,9 @@ class ArduinoCommsThread(threading.Thread):
     i = 0
     while i < 100:
       if (i % 2) == 1:
-        command = "Hello"
+        command = "LED:0:0:0"
       else:
-        command = "Whattup"
+        command = "LED:15:105:255"
       print("Sent: " + command)
       self.sendMessage(command)
       reply = self.receiveMessage()

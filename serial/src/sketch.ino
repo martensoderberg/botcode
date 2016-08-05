@@ -29,10 +29,10 @@ void handleMsg() {
     // The message was "Hello"
     Serial.print("Hey there handsome!");
   } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
-    handleLEDMsg();
     // The message beegins with "LED:"
     // This message should be on the form "LED:r:g:b"
-
+    handleLEDMsg();
+    Serial.print("OK");
   } else {
     Serial.print("Ohai");
   }
@@ -53,6 +53,8 @@ void handleLEDMsg() {
   int b = atoi(strtok(NULL, ":"));
 
   led.setPixelColor(0, led.Color(r, g, b));
+  led.show();
+  delay(100); // This will have to go later on.
 }
 
 void checkSerialPort() {
