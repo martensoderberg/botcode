@@ -32,6 +32,11 @@ void setup() {
   Serial.begin(9600);
   led.begin();
   led.show();
+
+  pinMode(MOTOR_SPD_PIN_L, OUTPUT);
+  pinMode(MOTOR_SPD_PIN_R, OUTPUT);
+  pinMode(MOTOR_DIR_PIN_L, OUTPUT);
+  pinMode(MOTOR_DIR_PIN_R, OUTPUT);
 }
 
 void loop() {
