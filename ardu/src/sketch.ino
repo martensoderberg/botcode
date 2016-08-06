@@ -1,11 +1,28 @@
 #include <Adafruit_NeoPixel.h>
 
+#define LINE_SENSOR_PIN_L  0
+#define LINE_SENSOR_PIN_CL 1
+#define LINE_SENSOR_PIN_C  2
+#define LINE_SENSOR_PIN_CR 3
+#define LINE_SENSOR_PIN_R  4
+
+#define MOTOR_SPD_PIN_L    5
+#define MOTOR_SPD_PIN_R    6
+#define MOTOR_DIR_PIN_R    7
+#define MOTOR_DIR_PIN_L    12
+
+#define LED_PIN            10
+
+#define BUZZER_PIN         16
+
+#define IR_TX_PIN_L        13
+#define IR_TX_PIN_R        8
+#define IR_RX_PIN          17
+
 #define MESSAGE_BUFFER_SIZE 100
 
-#define LED_PIN_NO 10
-
 // This initializes a "strip" of exactly 1 LED (so not a strip...)
-Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN_NO, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 char msgBuf[MESSAGE_BUFFER_SIZE];
 int msgLen;
