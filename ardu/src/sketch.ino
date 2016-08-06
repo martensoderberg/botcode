@@ -1,20 +1,25 @@
 #include <Adafruit_NeoPixel.h>
 
+// There are 5 analog line sensors in the front of the bot
 #define LINE_SENSOR_PIN_L  0
 #define LINE_SENSOR_PIN_CL 1
 #define LINE_SENSOR_PIN_C  2
 #define LINE_SENSOR_PIN_CR 3
 #define LINE_SENSOR_PIN_R  4
 
+// Each pin here controls two of the four motors on the bot
 #define MOTOR_SPD_PIN_L    5
 #define MOTOR_SPD_PIN_R    6
 #define MOTOR_DIR_PIN_R    7
 #define MOTOR_DIR_PIN_L    12
 
+// The led can do fancy things like glow
 #define LED_PIN            10
 
+// The buzzer can play songs!
 #define BUZZER_PIN         16
 
+// Two IR transmitters and an IR receiver let us ping the environment
 #define IR_TX_PIN_L        13
 #define IR_TX_PIN_R        8
 #define IR_RX_PIN          17
