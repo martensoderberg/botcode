@@ -88,14 +88,13 @@ void setup() {
 }
 
 void loop() {
-  checkSerialPort();
-
-  if (msgExists) {
-    handleMsg();
-  }
-
   if (stateChanged) {
     updatePins();
+  }
+
+  checkSerialPort();
+  if (msgExists) {
+    handleMsg();
   }
 }
 
