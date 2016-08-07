@@ -29,6 +29,7 @@
 // This initializes a "strip" of exactly 1 LED (so not a strip...)
 Adafruit_NeoPixel led = Adafruit_NeoPixel(1, LED_PIN, NEO_GRB + NEO_KHZ800);
 
+char sendBuf[MESSAGE_BUFFER_SIZE];
 char msgBuf[MESSAGE_BUFFER_SIZE];
 int msgLen;
 boolean msgExists = false;
@@ -38,10 +39,22 @@ void setup() {
   led.begin();
   led.show();
 
+  pinMode(LINE_SENSOR_PIN_L,  INPUT);
+  pinMode(LINE_SENSOR_PIN_CL, INPUT);
+  pinMode(LINE_SENSOR_PIN_C,  INPUT);
+  pinMode(LINE_SENSOR_PIN_CR, INPUT);
+  pinMode(LINE_SENSOR_PIN_R,  INPUT);
+
   pinMode(MOTOR_SPD_PIN_L, OUTPUT);
   pinMode(MOTOR_SPD_PIN_R, OUTPUT);
   pinMode(MOTOR_DIR_PIN_L, OUTPUT);
   pinMode(MOTOR_DIR_PIN_R, OUTPUT);
+
+  pinMode(LED_PIN, OUTPUT);
+
+  pinMode(IR_TX_PIN_L, OUTPUT);
+  pinMode(IR_TX_PIN_R, OUTPUT);
+  pinMode(IR_RX_PIN, INPUT);
 }
 
 void loop() {
@@ -54,24 +67,43 @@ void loop() {
 void handleMsg() {
   if (strcmp(msgBuf,"Hello") == 0) {
     // The message was "Hello"
-    Serial.print("Hey there handsome!");
+    sprintf(sendBuf, "Hey there handsome!");
   } else if (strcmp(msgBuf, "HALT") == 0) {
     // We need to stop everything we're doing!
     handleHaltMsg();
-    Serial.print("HAMMERZEIT");
+    sprintf(sendBuf, "HAMMERZEIT");
   } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
-    // The message beegins with "LED:"
+    // The message begins with "LED:"
     // This message should be on the form "LED:r:g:b"
     handleLEDMsg();
-    Serial.print("OK");
+    prepareStatusMsg();
   } else {
-    Serial.print("Ohai");
+    sprintf(sendBuf, "I didn't quite get that");
   }
+  Serial.write(sendBuf);
   byte stopByte = 0;
   Serial.write(stopByte);
 
   msgLen = 0; // reset the message length counter
   msgExists = false;
+}
+
+void prepareStatusMsg() {
+  int analogL  = analogRead(LINE_SENSOR_PIN_L);
+  int analogCL = analogRead(LINE_SENSOR_PIN_CL);
+  int analogC  = analogRead(LINE_SENSOR_PIN_C);
+  int analogCR = analogRead(LINE_SENSOR_PIN_CR);
+  int analogR  = analogRead(LINE_SENSOR_PIN_R);
+
+  sprintf(
+    sendBuf,
+    "OK:%d:%d:%d:%d:%d",
+    analogL,
+    analogCL,
+    analogC,
+    analogCR,
+    analogR
+  );
 }
 
 // This function stops everything the bot is doing right now
