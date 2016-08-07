@@ -6,8 +6,23 @@ import time
 import datetime
 import threading
 import math
+import queue
 
 startTime = datetime.datetime.now()
+
+# Driving states:
+DRIVING_NOWHERE   = 100
+DRIVING_FORWARDS  = 110
+DRIVING_BACKWARDS = 120
+
+# Turning states:
+TURNING_NOWHERE   = 200
+TURNING_LEFT      = 210
+TURNING_RIGHT     = 220
+
+drivingState = DRIVING_NOWHERE
+turningState = TURNING_NOWHERE
+stateLock = threading.Lock()
 
 def getTimestamp():
   timeNow = datetime.datetime.now()
@@ -97,14 +112,21 @@ class ArduinoCommsThread(threading.Thread):
     self.connected = True
 
   def run(self):
+    global stateLock, drivingState, turningState
+
     self.establishConnection()
     i = 0
     while self.shouldIKeepGoing():
-      hectoseconds = int(round(time.time() * 100))
-      r = (hectoseconds + 50) % 255
-      g = (hectoseconds - 50) % 255
-      b =  hectoseconds       % 255
-      command = "LED:" + str(r) + ":" + str(g) + ":" + str(b)
+      #hectoseconds = int(round(time.time() * 100))
+      #r = (hectoseconds + 50) % 255
+      #g = (hectoseconds - 50) % 255
+      #b =  hectoseconds       % 255
+      #command = "LED:" + str(r) + ":" + str(g) + ":" + str(b)
+
+      stateLock.acquire()
+      command = "STATE:" + str(drivingState) + ":" + str(turningState)
+      stateLock.release()
+
       try:
         self.sendMessage(command)
         self.receiveMessage()
@@ -119,20 +141,33 @@ class ArduinoCommsThread(threading.Thread):
 
 class HTTPHandler(BaseHTTPRequestHandler):
   def do_GET(self):
+    global stateLock, drivingState, turningState
     # Depending on the path requested in the GET, take a different action.
     parsed_path = urlparse(self.path)
     if   (self.path == "/driveForwards"):
-      pass
+      stateLock.acquire()
+      drivingState = DRIVING_FORWARDS
+      stateLock.release()
     elif (self.path == "/driveBackwards"):
-      pass
+      stateLock.acquire()
+      drivingState = DRIVING_BACKWARDS
+      stateLock.release()
     elif (self.path == "/turnLeft"):
-      pass
+      stateLock.acquire()
+      turningState = TURNING_LEFT
+      stateLock.release()
     elif (self.path == "/turnRight"):
-      pass
+      stateLock.acquire()
+      turningState = TURNING_RIGHT
+      stateLock.release()
     elif (self.path == "/stopDriving"):
-      pass
+      stateLock.acquire()
+      drivingState = DRIVING_NOWHERE
+      stateLock.release()
     elif (self.path == "/stopTurning"):
-      pass
+      stateLock.acquire()
+      turningState = TURNING_NOWHERE
+      stateLock.release()
 
     # Respond by describing the (new) state of the machine
     message = "COPY THAT"
@@ -160,7 +195,7 @@ def main():
   httpThread.start()
 
   try:
-    # wait indefinitely
+    # wait indefinitely (commsThread won't quit on its own)
     commsThread.join()
   except KeyboardInterrupt:
     commsThread.halt() # ask to die

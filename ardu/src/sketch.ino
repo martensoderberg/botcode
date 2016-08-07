@@ -24,6 +24,16 @@
 #define IR_TX_PIN_R        8
 #define IR_RX_PIN          17
 
+// State constants -- driving states
+#define DRIVING_NOWHERE   100
+#define DRIVING_FORWARDS  110
+#define DRIVING_BACKWARDS 120
+
+// State constants -- turning states
+#define TURNING_NOWHERE   200
+#define TURNING_LEFT      210
+#define TURNING_RIGHT     220
+
 #define MESSAGE_BUFFER_SIZE 100
 
 // This initializes a "strip" of exactly 1 LED (so not a strip...)
@@ -72,6 +82,11 @@ void handleMsg() {
     // We need to stop everything we're doing!
     handleHaltMsg();
     sprintf(sendBuf, "HAMMERZEIT");
+  } else if (msgLen >= 6 && strncmp(msgBuf, "STATE:", 6) == 0) {
+    // This message begins with "STATE:"
+    // This message should be on the form "STATE:xxx:yyy"
+    handleStateMsg();
+    prepareStatusMsg();
   } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
     // The message begins with "LED:"
     // This message should be on the form "LED:r:g:b"
@@ -110,6 +125,49 @@ void prepareStatusMsg() {
 void handleHaltMsg() {
   // TODO: This function should do more things when we have more functionality.
   led.setPixelColor(0, 0, 0, 0);
+  led.show();
+}
+
+// This function handles a state message
+void handleStateMsg() {
+  char *p;
+  p = strtok(msgBuf, ":"); // This will just say "STATE"
+  // We expect 2 more delimited values (drivingState and turningState)
+  // note that strtok "remembers" the result of the last call.
+  int drivingState = atoi(strtok(NULL, ":"));
+  int turningState = atoi(strtok(NULL, ":"));
+
+  int r = 0;
+  int g = 0;
+  int b = 0;
+
+  switch (drivingState) {
+    case DRIVING_NOWHERE:
+      r += 0;
+      break;
+    case DRIVING_FORWARDS:
+      r += 25;
+      g += 50;
+      b += 75;
+      break;
+    case DRIVING_BACKWARDS:
+      g += 100;
+      break;
+  }
+
+  switch (turningState) {
+    case TURNING_NOWHERE:
+      r += 0;
+      break;
+    case TURNING_LEFT:
+      b += 100;
+      break;
+    case TURNING_RIGHT:
+      r += 100;
+      break;
+  }
+
+  led.setPixelColor(0, r, g, b);
   led.show();
 }
 
