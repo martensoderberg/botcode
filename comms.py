@@ -1,3 +1,6 @@
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse
+import socket
 import serial
 import time
 import datetime
@@ -5,27 +8,10 @@ import threading
 import math
 
 startTime = datetime.datetime.now()
-keepGoing = True
-keepGoingLock = threading.Lock()
-messagesReceived = 0
 
 def getTimestamp():
   timeNow = datetime.datetime.now()
   return str(timeNow - startTime)
-
-def shouldIKeepGoing():
-  global keepGoingLock, keepGoing
-  wellShouldI = True
-  keepGoingLock.acquire() # begin mutex zone
-  wellShouldI = keepGoing
-  keepGoingLock.release() # stop mutex zone
-  return wellShouldI
-
-def halt():
-  global keepGoingLock, keepGoing
-  keepGoingLock.acquire()
-  keepGoing = False
-  keepGoingLock.release()
 
 # This class handles communications with the arduino controller
 # over an already-established serial port (ser)
@@ -33,6 +19,20 @@ class ArduinoCommsThread(threading.Thread):
   def __init__(self):
     threading.Thread.__init__(self)
     self.connected = False
+    self.keepGoing = True
+    self.keepGoingLock = threading.Lock()
+    self.messagesReceived = 0
+
+  def shouldIKeepGoing(self):
+    self.keepGoingLock.acquire() # begin mutex zone
+    wellShouldI = self.keepGoing
+    self.keepGoingLock.release() # stop mutex zone
+    return wellShouldI
+
+  def halt(self):
+    self.keepGoingLock.acquire()
+    self.keepGoing = False
+    self.keepGoingLock.release()
 
   def defineArduinoConnection(self, portName):
     ser = serial.Serial(
@@ -71,7 +71,6 @@ class ArduinoCommsThread(threading.Thread):
     print(getTimestamp() + ": Sent: " + message)
 
   def receiveMessage(self):
-    global messagesReceived
     ser = self.ser
     frame = bytearray()
     stopByteEncountered = False
@@ -83,13 +82,13 @@ class ArduinoCommsThread(threading.Thread):
         frame += byte
     reply = frame.decode("utf-8")
     print(getTimestamp() + ": Rcvd: " + reply)
-    messagesReceived += 1
+    self.messagesReceived += 1
     return reply
 
   def establishConnection(self):
     (success, ser) = self.tryArduinoConnection()
     while not success:
-      if shouldIKeepGoing():
+      if self.shouldIKeepGoing():
         time.sleep(0.2)
         (success, ser) = self.tryArduinoConnection()
       else:
@@ -100,7 +99,7 @@ class ArduinoCommsThread(threading.Thread):
   def run(self):
     self.establishConnection()
     i = 0
-    while shouldIKeepGoing():
+    while self.shouldIKeepGoing():
       hectoseconds = int(round(time.time() * 100))
       r = (hectoseconds + 50) % 255
       g = (hectoseconds - 50) % 255
@@ -118,24 +117,66 @@ class ArduinoCommsThread(threading.Thread):
       self.receiveMessage()
       self.ser.close()
 
+class HTTPHandler(BaseHTTPRequestHandler):
+  def do_GET(self):
+    # Depending on the path requested in the GET, take a different action.
+    parsed_path = urlparse(self.path)
+    if   (self.path == "/driveForwards"):
+      pass
+    elif (self.path == "/driveBackwards"):
+      pass
+    elif (self.path == "/turnLeft"):
+      pass
+    elif (self.path == "/turnRight"):
+      pass
+    elif (self.path == "/stopDriving"):
+      pass
+    elif (self.path == "/stopTurning"):
+      pass
+
+    # Respond by describing the (new) state of the machine
+    message = "COPY THAT"
+    self.send_response(200)
+    self.end_headers()
+    self.wfile.write(bytes(message, 'UTF-8'))
+    return
+
+def getNetworkIP():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(('192.168.1.1', 80))
+    return s.getsockname()[0]
+
 def main():
+  # Start arduino comms thread
   commsThread = ArduinoCommsThread()
   commsThread.daemon = True
   commsThread.start()
+
+  # Start HTTP server thread
+  myip = getNetworkIP()
+  server = HTTPServer((myip, 8080), HTTPHandler)
+  httpThread = threading.Thread(target = server.serve_forever)
+  httpThread.daemon = True
+  httpThread.start()
+
   try:
+    # wait indefinitely
     commsThread.join()
   except KeyboardInterrupt:
-    halt()
-  finally:
+    commsThread.halt() # ask to die
+    server.shutdown() # ask to die
     commsThread.join()
+    httpThread.join()
+
+    # Print pretty things when session is over
+    msgsRcvd = commsThread.messagesReceived
     timePassed = (datetime.datetime.now() - startTime)
     secondsPassed = timePassed.seconds
     microseconds = timePassed.microseconds
-    msgPerSecond = messagesReceived / (secondsPassed + (1000000 / microseconds))
+    msgPerSecond = msgsRcvd / (secondsPassed + (1000000 / microseconds))
     print("")
     print("Session terminated")
-    print("Received " + str(messagesReceived) + " messages in " + str(secondsPassed) + "." + str(microseconds)[:2] + " seconds.")
+    print("Received " + str(msgsRcvd) + " messages in " + str(secondsPassed) + "." + str(microseconds)[:2] + " seconds.")
     print("Avg. messages per second: " + str(math.ceil(msgPerSecond)))
-
 
 main()
