@@ -141,34 +141,64 @@ void handleStateMsg() {
   int g = 0;
   int b = 0;
 
+  int leftSideSpeed = 0;
+  int rightSideSpeed = 0;
+
   switch (drivingState) {
     case DRIVING_NOWHERE:
-      r += 0;
       break;
     case DRIVING_FORWARDS:
       r += 25;
       g += 50;
       b += 75;
+      leftSideSpeed += 100;
+      rightSideSpeed += 100;
       break;
     case DRIVING_BACKWARDS:
       g += 100;
+      leftSideSpeed -= 100;
+      rightSideSpeed -= 100;
       break;
   }
 
   switch (turningState) {
     case TURNING_NOWHERE:
-      r += 0;
       break;
     case TURNING_LEFT:
       b += 100;
+      leftSideSpeed -= 50;
+      rightSideSpeed += 50;
       break;
     case TURNING_RIGHT:
       r += 100;
+      leftSideSpeed += 50;
+      rightSideSpeed -= 50;
       break;
   }
 
   led.setPixelColor(0, r, g, b);
   led.show();
+
+  if (leftSideSpeed > 0) {
+    // Go forward
+    digitalWrite(MOTOR_DIR_PIN_L, 0);
+  } else {
+    // Go backward
+    digitalWrite(MOTOR_DIR_PIN_L, 1);
+    //leftSideSpeed = -leftSideSpeed; // we need positive values
+  }
+
+  if (rightSideSpeed > 0) {
+    // Go forward
+    digitalWrite(MOTOR_DIR_PIN_R, 0);
+  } else {
+    // Go backward
+    digitalWrite(MOTOR_DIR_PIN_R, 1);
+   // rightSideSpeed = -rightSideSpeed; // we need positive values
+  }
+
+  digitalWrite(MOTOR_SPD_PIN_L, leftSideSpeed);
+  digitalWrite(MOTOR_SPD_PIN_R, rightSideSpeed);
 }
 
 // We got a LED message. Handle it!
