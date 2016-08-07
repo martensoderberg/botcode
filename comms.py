@@ -12,13 +12,13 @@ startTime = datetime.datetime.now()
 
 # Driving states:
 DRIVING_NOWHERE   = 100
-DRIVING_FORWARDS  = 110
-DRIVING_BACKWARDS = 120
+DRIVING_FORWARDS  = 101
+DRIVING_BACKWARDS = 102
 
 # Turning states:
 TURNING_NOWHERE   = 200
-TURNING_LEFT      = 210
-TURNING_RIGHT     = 220
+TURNING_LEFT      = 201
+TURNING_RIGHT     = 202
 
 drivingState = DRIVING_NOWHERE
 turningState = TURNING_NOWHERE

@@ -26,13 +26,17 @@
 
 // State constants -- driving states
 #define DRIVING_NOWHERE   100
-#define DRIVING_FORWARDS  110
-#define DRIVING_BACKWARDS 120
+#define DRIVING_FORWARDS  101
+#define DRIVING_BACKWARDS 102
 
 // State constants -- turning states
 #define TURNING_NOWHERE   200
-#define TURNING_LEFT      210
-#define TURNING_RIGHT     220
+#define TURNING_LEFT      201
+#define TURNING_RIGHT     202
+
+// Motor constants
+#define FORWARDS  0
+#define BACKWARDS 1
 
 #define MESSAGE_BUFFER_SIZE 100
 
@@ -43,6 +47,21 @@ char sendBuf[MESSAGE_BUFFER_SIZE];
 char msgBuf[MESSAGE_BUFFER_SIZE];
 int msgLen;
 boolean msgExists = false;
+boolean stateChanged = true;
+
+int drivingState = DRIVING_NOWHERE;
+int turningState = TURNING_NOWHERE;
+
+int pinValues [][] =
+  [[ FORWARDS,  FORWARDS,   0,   0],
+   [ FORWARDS, BACKWARDS, 100, 100],
+   [BACKWARDS,  FORWARDS, 100, 100],
+   [ FORWARDS,  FORWARDS, 100, 100],
+   [ FORWARDS,  FORWARDS, 150,  50],
+   [ FORWARDS,  FORWARDS,  50, 150],
+   [BACKWARDS, BACKWARDS, 100, 100],
+   [BACKWARDS, BACKWARDS, 150,  50],
+   [BACKWARDS, BACKWARDS,  50, 150]];
 
 void setup() {
   Serial.begin(9600);
@@ -69,8 +88,13 @@ void setup() {
 
 void loop() {
   checkSerialPort();
+
   if (msgExists) {
     handleMsg();
+  }
+
+  if (stateChanged) {
+    updatePins();
   }
 }
 
@@ -81,11 +105,13 @@ void handleMsg() {
   } else if (strcmp(msgBuf, "HALT") == 0) {
     // We need to stop everything we're doing!
     handleHaltMsg();
+    stateChanged = true;
     sprintf(sendBuf, "HAMMERZEIT");
   } else if (msgLen >= 6 && strncmp(msgBuf, "STATE:", 6) == 0) {
     // This message begins with "STATE:"
     // This message should be on the form "STATE:xxx:yyy"
     handleStateMsg();
+    stateChanged = true;
     prepareStatusMsg();
   } else if (msgLen >= 4 && strncmp(msgBuf, "LED:", 4) == 0) {
     // The message begins with "LED:"
@@ -123,9 +149,11 @@ void prepareStatusMsg() {
 
 // This function stops everything the bot is doing right now
 void handleHaltMsg() {
-  // TODO: This function should do more things when we have more functionality.
   led.setPixelColor(0, 0, 0, 0);
   led.show();
+
+  drivingState = DRIVING_NOWHERE;
+  turningState = TURNING_NOWHERE;
 }
 
 // This function handles a state message
@@ -134,71 +162,25 @@ void handleStateMsg() {
   p = strtok(msgBuf, ":"); // This will just say "STATE"
   // We expect 2 more delimited values (drivingState and turningState)
   // note that strtok "remembers" the result of the last call.
-  int drivingState = atoi(strtok(NULL, ":"));
-  int turningState = atoi(strtok(NULL, ":"));
+  drivingState = atoi(strtok(NULL, ":"));
+  turningState = atoi(strtok(NULL, ":"));
+}
 
-  int r = 0;
-  int g = 0;
-  int b = 0;
+void updatePins() {
+  // The pin values are stored in the pinValues matrix
+  // The index for this matrix is derived from the state values...
+  int pinIndex = (drivingState - 100) * 3 + (turningState - 200)
+  int rightSideDir = pinValues[pinIndex][0];
+  int leftSideDir  = pinValues[pinIndex][1];
+  int rightSideSpd = pinValues[pinIndex][2];
+  int leftSideSpd  = pinValues[pinIndex][3];
 
-  int leftSideSpeed = 0;
-  int rightSideSpeed = 0;
+  digitalWrite(MOTOR_DIR_PIN_L, leftSideDir);
+  digitalWrite(MOTOR_DIR_PIN_R, rightSideDir);
+  analogWrite (MOTOR_SPD_PIN_L, leftSideSpd);
+  analogWrite (MOTOR_SPD_PIN_R, rightSideSpd);
 
-  switch (drivingState) {
-    case DRIVING_NOWHERE:
-      break;
-    case DRIVING_FORWARDS:
-      r += 25;
-      g += 50;
-      b += 75;
-      leftSideSpeed += 100;
-      rightSideSpeed += 100;
-      break;
-    case DRIVING_BACKWARDS:
-      g += 100;
-      leftSideSpeed -= 100;
-      rightSideSpeed -= 100;
-      break;
-  }
-
-  switch (turningState) {
-    case TURNING_NOWHERE:
-      break;
-    case TURNING_LEFT:
-      b += 100;
-      leftSideSpeed -= 50;
-      rightSideSpeed += 50;
-      break;
-    case TURNING_RIGHT:
-      r += 100;
-      leftSideSpeed += 50;
-      rightSideSpeed -= 50;
-      break;
-  }
-
-  led.setPixelColor(0, r, g, b);
-  led.show();
-
-  if (leftSideSpeed > 0) {
-    // Go forward
-    digitalWrite(MOTOR_DIR_PIN_L, 0);
-  } else {
-    // Go backward
-    digitalWrite(MOTOR_DIR_PIN_L, 1);
-    //leftSideSpeed = -leftSideSpeed; // we need positive values
-  }
-
-  if (rightSideSpeed > 0) {
-    // Go forward
-    digitalWrite(MOTOR_DIR_PIN_R, 0);
-  } else {
-    // Go backward
-    digitalWrite(MOTOR_DIR_PIN_R, 1);
-   // rightSideSpeed = -rightSideSpeed; // we need positive values
-  }
-
-  digitalWrite(MOTOR_SPD_PIN_L, leftSideSpeed);
-  digitalWrite(MOTOR_SPD_PIN_R, rightSideSpeed);
+  stateChanged = false;
 }
 
 // We got a LED message. Handle it!
