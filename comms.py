@@ -134,7 +134,7 @@ def main():
     msgPerSecond = messagesReceived / (secondsPassed + (1000000 / microseconds))
     print("")
     print("Session terminated")
-    print("Received " + str(messagesReceived) + " messages in " + str(secondsPassed) + "." + str(microseconds) + " seconds.")
+    print("Received " + str(messagesReceived) + " messages in " + str(secondsPassed) + "." + str(microseconds)[:2] + " seconds.")
     print("Avg. messages per second: " + str(math.ceil(msgPerSecond)))
 
 
