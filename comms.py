@@ -2,10 +2,12 @@ import serial
 import time
 import datetime
 import threading
+import math
 
 startTime = datetime.datetime.now()
 keepGoing = True
 keepGoingLock = threading.Lock()
+messagesReceived = 0
 
 def getTimestamp():
   timeNow = datetime.datetime.now()
@@ -69,6 +71,7 @@ class ArduinoCommsThread(threading.Thread):
     print(getTimestamp() + ": Sent: " + message)
 
   def receiveMessage(self):
+    global messagesReceived
     ser = self.ser
     frame = bytearray()
     stopByteEncountered = False
@@ -80,6 +83,7 @@ class ArduinoCommsThread(threading.Thread):
         frame += byte
     reply = frame.decode("utf-8")
     print(getTimestamp() + ": Rcvd: " + reply)
+    messagesReceived += 1
     return reply
 
   def establishConnection(self):
@@ -124,5 +128,14 @@ def main():
     halt()
   finally:
     commsThread.join()
+    timePassed = (datetime.datetime.now() - startTime)
+    secondsPassed = timePassed.seconds
+    microseconds = timePassed.microseconds
+    msgPerSecond = messagesReceived / (secondsPassed + (1000000 / microseconds))
+    print("")
+    print("Session terminated")
+    print("Received " + str(messagesReceived) + " messages in " + str(secondsPassed) + "." + str(microseconds) + " seconds.")
+    print("Avg. messages per second: " + str(math.ceil(msgPerSecond)))
+
 
 main()
