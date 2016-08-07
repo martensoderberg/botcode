@@ -52,16 +52,17 @@ boolean stateChanged = true;
 int drivingState = DRIVING_NOWHERE;
 int turningState = TURNING_NOWHERE;
 
-int pinValues [][] =
-  [[ FORWARDS,  FORWARDS,   0,   0],
-   [ FORWARDS, BACKWARDS, 100, 100],
-   [BACKWARDS,  FORWARDS, 100, 100],
-   [ FORWARDS,  FORWARDS, 100, 100],
-   [ FORWARDS,  FORWARDS, 150,  50],
-   [ FORWARDS,  FORWARDS,  50, 150],
-   [BACKWARDS, BACKWARDS, 100, 100],
-   [BACKWARDS, BACKWARDS, 150,  50],
-   [BACKWARDS, BACKWARDS,  50, 150]];
+int pinValues [9][4] = {
+  { FORWARDS,  FORWARDS,   0,   0},
+  { FORWARDS, BACKWARDS, 100, 100},
+  {BACKWARDS,  FORWARDS, 100, 100},
+  { FORWARDS,  FORWARDS, 100, 100},
+  { FORWARDS,  FORWARDS, 150,  50},
+  { FORWARDS,  FORWARDS,  50, 150},
+  {BACKWARDS, BACKWARDS, 100, 100},
+  {BACKWARDS, BACKWARDS, 150,  50},
+  {BACKWARDS, BACKWARDS,  50, 150}
+};
 
 void setup() {
   Serial.begin(9600);
@@ -169,7 +170,7 @@ void handleStateMsg() {
 void updatePins() {
   // The pin values are stored in the pinValues matrix
   // The index for this matrix is derived from the state values...
-  int pinIndex = (drivingState - 100) * 3 + (turningState - 200)
+  int pinIndex = (drivingState - 100) * 3 + (turningState - 200);
   int rightSideDir = pinValues[pinIndex][0];
   int leftSideDir  = pinValues[pinIndex][1];
   int rightSideSpd = pinValues[pinIndex][2];
