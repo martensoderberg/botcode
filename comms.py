@@ -32,12 +32,12 @@ BACKWARDS_LEFT    = 107
 BACKWARDS_RIGHT   = 108
 
 # Actions
-DRIVE_FORWARDS  = 200
-DRIVE_BACKWARDS = 201
-STOP_DRIVING    = 202
-TURN_LEFT       = 203
-TURN_RIGHT      = 204
-STOP_TURNING    = 205
+DRIVE_FORWARDS  = "driveForwards"
+DRIVE_BACKWARDS = "driveBackwards"
+STOP_DRIVING    = "stopDriving"
+TURN_LEFT       = "turnLeft"
+TURN_RIGHT      = "turnRight"
+STOP_TURNING    = "stopTurning"
 
 # This dictionary maps a state-action tuple to the resulting state.
 stateProgressChart = {}
@@ -160,12 +160,9 @@ class ArduinoCommsThread(threading.Thread):
     for portNumber in [0, 1, 2, 3]:
       try:
         portName = "/dev/ttyACM" + str(portNumber)
-        print(getTimestamp() + ": Attempting to connect to arduino on " + portName + "... ",end="")
         ser = self.defineArduinoConnection(portName)
-        print("succeded")
         return (True, ser) # success
       except serial.SerialException:
-        print("failed")
         continue
       except Exception as exception:
         print("failed for an unknown reason!")
@@ -195,12 +192,18 @@ class ArduinoCommsThread(threading.Thread):
 
   def establishConnection(self):
     (success, ser) = self.tryArduinoConnection()
+    counter = 0
     while not success:
       if self.shouldIKeepGoing():
         time.sleep(0.2)
         (success, ser) = self.tryArduinoConnection()
+        counter += 1
+        if counter > 10:
+          print(getTimestamp() + ": Can't connect to arduino, retrying...")
+          counter = 0
       else:
         exit(0)
+    print(getTimestamp() + ": Connected to arduino")
     self.ser = ser
     self.connected = True
 
@@ -210,12 +213,6 @@ class ArduinoCommsThread(threading.Thread):
     self.establishConnection()
     i = 0
     while self.shouldIKeepGoing():
-      #hectoseconds = int(round(time.time() * 100))
-      #r = (hectoseconds + 50) % 255
-      #g = (hectoseconds - 50) % 255
-      #b =  hectoseconds       % 255
-      #command = "LED:" + str(r) + ":" + str(g) + ":" + str(b)
-
       stateLock.acquire()
       command = "STATE:" + str(state)
       stateLock.release()
@@ -235,27 +232,22 @@ class ArduinoCommsThread(threading.Thread):
 class HTTPHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     global stateLock, state, stateProgressChart
-    # Depending on the path requested in the GET, take a different action.
-    parsed_path = urlparse(self.path)
-    if   (self.path == "/driveForwards"):
-      action = DRIVE_FORWARDS
-    elif (self.path == "/driveBackwards"):
-      action = DRIVE_BACKWARDS
-    elif (self.path == "/turnLeft"):
-      action = TURN_LEFT
-    elif (self.path == "/turnRight"):
-      action = TURN_RIGHT
-    elif (self.path == "/stopDriving"):
-      action = STOP_DRIVING
-    elif (self.path == "/stopTurning"):
-      action = STOP_TURNING
+    action = self.path[1:]
 
-    stateLock.acquire()
-    state = stateProgressChart[state, action]
-    stateLock.release()
+    try:
+      stateLock.acquire()
+      newState = stateProgressChart[state, action]
+      if (newState == state):
+        message = "NO CAN DO"
+      else:
+        message = "COPY THAT"
+        state = newState
+    except KeyError:
+      message = "SAY AGAIN, HOUSTON"
+    finally:
+      stateLock.release()
 
     # Respond by describing the (new) state of the machine
-    message = "COPY THAT"
     self.send_response(200)
     self.end_headers()
     self.wfile.write(bytes(message, 'UTF-8'))
