@@ -52,16 +52,16 @@ boolean stateChanged = true;
 int drivingState = DRIVING_NOWHERE;
 int turningState = TURNING_NOWHERE;
 
-int pinValues [9][4] = {
-  { FORWARDS,  FORWARDS,   0,   0},
-  { FORWARDS, BACKWARDS, 100, 100},
-  {BACKWARDS,  FORWARDS, 100, 100},
-  { FORWARDS,  FORWARDS, 250, 250},
-  { FORWARDS,  FORWARDS, 250,  50},
-  { FORWARDS,  FORWARDS,  50, 250},
-  {BACKWARDS, BACKWARDS, 250, 250},
-  {BACKWARDS, BACKWARDS, 250,  50},
-  {BACKWARDS, BACKWARDS,  50, 250}
+int pinValues [9][7] = {
+  { FORWARDS,  FORWARDS,   0,   0,   0,   0,   0},
+  { FORWARDS, BACKWARDS, 100, 100,   0,   0, 100},
+  {BACKWARDS,  FORWARDS, 100, 100,   0, 100,   0},
+  { FORWARDS,  FORWARDS, 250, 250, 100,   0,   0},
+  { FORWARDS,  FORWARDS, 250,  50, 100,   0, 100},
+  { FORWARDS,  FORWARDS,  50, 250, 100, 100,   0},
+  {BACKWARDS, BACKWARDS, 250, 250,  50,  50,  50},
+  {BACKWARDS, BACKWARDS, 250,  50,  50,  50, 150},
+  {BACKWARDS, BACKWARDS,  50, 250,  50, 150,  50}
 };
 
 void setup() {
@@ -174,12 +174,17 @@ void updatePins() {
   int leftSideDir  = pinValues[pinIndex][1];
   int rightSideSpd = pinValues[pinIndex][2];
   int leftSideSpd  = pinValues[pinIndex][3];
+  int r = pinValues[pinIndex][4];
+  int g = pinValues[pinIndex][5];
+  int b = pinValues[pinIndex][6];
 
   digitalWrite(MOTOR_DIR_PIN_L, leftSideDir);
   digitalWrite(MOTOR_DIR_PIN_R, rightSideDir);
   analogWrite (MOTOR_SPD_PIN_L, leftSideSpd);
   analogWrite (MOTOR_SPD_PIN_R, rightSideSpd);
 
+  led.setPixelColor(0, r, g, b);
+  led.show();
   stateChanged = false;
 }
 
