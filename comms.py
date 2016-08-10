@@ -20,8 +20,101 @@ TURNING_NOWHERE   = 200
 TURNING_LEFT      = 201
 TURNING_RIGHT     = 202
 
-drivingState = DRIVING_NOWHERE
-turningState = TURNING_NOWHERE
+# States
+IDLE              = 100
+LEFT              = 101
+RIGHT             = 102
+FORWARDS          = 103
+FORWARDS_LEFT     = 104
+FORWARDS_RIGHT    = 105
+BACKWARDS         = 106
+BACKWARDS_LEFT    = 107
+BACKWARDS_RIGHT   = 108
+
+# Actions
+DRIVE_FORWARDS  = 200
+DRIVE_BACKWARDS = 201
+STOP_DRIVING    = 202
+TURN_LEFT       = 203
+TURN_RIGHT      = 204
+STOP_TURNING    = 205
+
+# This dictionary maps a state-action tuple to the resulting state.
+stateProgressChart = {}
+
+# Progress for the IDLE state
+stateProgressChart[IDLE, DRIVE_FORWARDS]  = FORWARDS
+stateProgressChart[IDLE, DRIVE_BACKWARDS] = BACKWARDS
+stateProgressChart[IDLE, STOP_DRIVING]    = IDLE
+stateProgressChart[IDLE, TURN_LEFT]       = LEFT
+stateProgressChart[IDLE, TURN_RIGHT]      = RIGHT
+stateProgressChart[IDLE, STOP_TURNING]    = IDLE
+
+# Progress for the LEFT state
+stateProgressChart[LEFT, DRIVE_FORWARDS]  = FORWARDS_LEFT
+stateProgressChart[LEFT, DRIVE_BACKWARDS] = BACKWARDS_LEFT
+stateProgressChart[LEFT, STOP_DRIVING]    = LEFT
+stateProgressChart[LEFT, TURN_LEFT]       = LEFT
+stateProgressChart[LEFT, TURN_RIGHT]      = LEFT
+stateProgressChart[LEFT, STOP_TURNING]    = IDLE
+
+# Progress for the RIGHT state
+stateProgressChart[RIGHT, DRIVE_FORWARDS]  = FORWARDS_RIGHT
+stateProgressChart[RIGHT, DRIVE_BACKWARDS] = BACKWARDS_RIGHT
+stateProgressChart[RIGHT, STOP_DRIVING]    = RIGHT
+stateProgressChart[RIGHT, TURN_LEFT]       = RIGHT
+stateProgressChart[RIGHT, TURN_RIGHT]      = RIGHT
+stateProgressChart[RIGHT, STOP_TURNING]    = IDLE
+
+# Progress for the FORWARDS state
+stateProgressChart[FORWARDS, DRIVE_FORWARDS]  = FORWARDS
+stateProgressChart[FORWARDS, DRIVE_BACKWARDS] = FORWARDS
+stateProgressChart[FORWARDS, STOP_DRIVING]    = IDLE
+stateProgressChart[FORWARDS, TURN_LEFT]       = FORWARDS_LEFT
+stateProgressChart[FORWARDS, TURN_RIGHT]      = FORWARDS_RIGHT
+stateProgressChart[FORWARDS, STOP_TURNING]    = FORWARDS
+
+# Progress for the BACKWARDS state
+stateProgressChart[BACKWARDS, DRIVE_FORWARDS]  = BACKWARDS
+stateProgressChart[BACKWARDS, DRIVE_BACKWARDS] = BACKWARDS
+stateProgressChart[BACKWARDS, STOP_DRIVING]    = IDLE
+stateProgressChart[BACKWARDS, TURN_LEFT]       = BACKWARDS_LEFT
+stateProgressChart[BACKWARDS, TURN_RIGHT]      = BACKWARDS_RIGHT
+stateProgressChart[BACKWARDS, STOP_TURNING]    = BACKWARDS
+
+# Progress for the FORWARDS_LEFT state
+stateProgressChart[FORWARDS_LEFT, DRIVE_FORWARDS]  = FORWARDS_LEFT
+stateProgressChart[FORWARDS_LEFT, DRIVE_BACKWARDS] = FORWARDS_LEFT
+stateProgressChart[FORWARDS_LEFT, STOP_DRIVING]    = LEFT
+stateProgressChart[FORWARDS_LEFT, TURN_LEFT]       = FORWARDS_LEFT
+stateProgressChart[FORWARDS_LEFT, TURN_RIGHT]      = FORWARDS_LEFT
+stateProgressChart[FORWARDS_LEFT, STOP_TURNING]    = FORWARDS
+
+# Progress for the FORWARDS_RIGHT state
+stateProgressChart[FORWARDS_RIGHT, DRIVE_FORWARDS]  = FORWARDS_RIGHT
+stateProgressChart[FORWARDS_RIGHT, DRIVE_BACKWARDS] = FORWARDS_RIGHT
+stateProgressChart[FORWARDS_RIGHT, STOP_DRIVING]    = RIGHT
+stateProgressChart[FORWARDS_RIGHT, TURN_LEFT]       = FORWARDS_RIGHT
+stateProgressChart[FORWARDS_RIGHT, TURN_RIGHT]      = FORWARDS_RIGHT
+stateProgressChart[FORWARDS_RIGHT, STOP_TURNING]    = FORWARDS
+
+# Progress for the BACKWARDS_LEFT state
+stateProgressChart[BACKWARDS_LEFT, DRIVE_FORWARDS]  = BACKWARDS_LEFT
+stateProgressChart[BACKWARDS_LEFT, DRIVE_BACKWARDS] = BACKWARDS_LEFT
+stateProgressChart[BACKWARDS_LEFT, STOP_DRIVING]    = LEFT
+stateProgressChart[BACKWARDS_LEFT, TURN_LEFT]       = BACKWARDS_LEFT
+stateProgressChart[BACKWARDS_LEFT, TURN_RIGHT]      = BACKWARDS_LEFT
+stateProgressChart[BACKWARDS_LEFT, STOP_TURNING]    = BACKWARDS
+
+# Progress for the BACKWARDS_RIGHT state
+stateProgressChart[BACKWARDS_RIGHT, DRIVE_FORWARDS]  = BACKWARDS_RIGHT
+stateProgressChart[BACKWARDS_RIGHT, DRIVE_BACKWARDS] = BACKWARDS_RIGHT
+stateProgressChart[BACKWARDS_RIGHT, STOP_DRIVING]    = RIGHT
+stateProgressChart[BACKWARDS_RIGHT, TURN_LEFT]       = BACKWARDS_RIGHT
+stateProgressChart[BACKWARDS_RIGHT, TURN_RIGHT]      = BACKWARDS_RIGHT
+stateProgressChart[BACKWARDS_RIGHT, STOP_TURNING]    = FORWARDS
+
+state = IDLE
 stateLock = threading.Lock()
 
 def getTimestamp():
@@ -112,7 +205,7 @@ class ArduinoCommsThread(threading.Thread):
     self.connected = True
 
   def run(self):
-    global stateLock, drivingState, turningState
+    global stateLock, state
 
     self.establishConnection()
     i = 0
@@ -124,7 +217,7 @@ class ArduinoCommsThread(threading.Thread):
       #command = "LED:" + str(r) + ":" + str(g) + ":" + str(b)
 
       stateLock.acquire()
-      command = "STATE:" + str(drivingState) + ":" + str(turningState)
+      command = "STATE:" + str(state)
       stateLock.release()
 
       try:
@@ -141,33 +234,25 @@ class ArduinoCommsThread(threading.Thread):
 
 class HTTPHandler(BaseHTTPRequestHandler):
   def do_GET(self):
-    global stateLock, drivingState, turningState
+    global stateLock, state, stateProgressChart
     # Depending on the path requested in the GET, take a different action.
     parsed_path = urlparse(self.path)
     if   (self.path == "/driveForwards"):
-      stateLock.acquire()
-      drivingState = DRIVING_FORWARDS
-      stateLock.release()
+      action = DRIVE_FORWARDS
     elif (self.path == "/driveBackwards"):
-      stateLock.acquire()
-      drivingState = DRIVING_BACKWARDS
-      stateLock.release()
+      action = DRIVE_BACKWARDS
     elif (self.path == "/turnLeft"):
-      stateLock.acquire()
-      turningState = TURNING_LEFT
-      stateLock.release()
+      action = TURN_LEFT
     elif (self.path == "/turnRight"):
-      stateLock.acquire()
-      turningState = TURNING_RIGHT
-      stateLock.release()
+      action = TURN_RIGHT
     elif (self.path == "/stopDriving"):
-      stateLock.acquire()
-      drivingState = DRIVING_NOWHERE
-      stateLock.release()
+      action = STOP_DRIVING
     elif (self.path == "/stopTurning"):
-      stateLock.acquire()
-      turningState = TURNING_NOWHERE
-      stateLock.release()
+      action = STOP_TURNING
+
+    stateLock.acquire()
+    state = stateProgressChart[state, action]
+    stateLock.release()
 
     # Respond by describing the (new) state of the machine
     message = "COPY THAT"

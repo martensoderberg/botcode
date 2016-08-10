@@ -24,15 +24,16 @@
 #define IR_TX_PIN_R        8
 #define IR_RX_PIN          17
 
-// State constants -- driving states
-#define DRIVING_NOWHERE   100
-#define DRIVING_FORWARDS  101
-#define DRIVING_BACKWARDS 102
-
-// State constants -- turning states
-#define TURNING_NOWHERE   200
-#define TURNING_LEFT      201
-#define TURNING_RIGHT     202
+// State constants
+#define IDLE            100
+#define LEFT            101
+#define RIGHT           102
+#define FORWARDS        103
+#define FORWARDS_LEFT   104
+#define FORWARDS_RIGHT  105
+#define BACKWARDS       106
+#define BACKWARDS_LEFT  107
+#define BACKWARDS_RIGHT 108
 
 // Motor constants
 #define FORWARDS  0
@@ -49,8 +50,7 @@ int msgLen;
 boolean msgExists = false;
 boolean stateChanged = true;
 
-int drivingState = DRIVING_NOWHERE;
-int turningState = TURNING_NOWHERE;
+int state = IDLE;
 
 int pinValues [9][7] = {
   { FORWARDS,  FORWARDS,   0,   0,   0,   0,   0},
@@ -152,24 +152,22 @@ void handleHaltMsg() {
   led.setPixelColor(0, 0, 0, 0);
   led.show();
 
-  drivingState = DRIVING_NOWHERE;
-  turningState = TURNING_NOWHERE;
+  state = IDLE;
 }
 
 // This function handles a state message
 void handleStateMsg() {
   char *p;
   p = strtok(msgBuf, ":"); // This will just say "STATE"
-  // We expect 2 more delimited values (drivingState and turningState)
+  // We expect 1 more delimited values (state)
   // note that strtok "remembers" the result of the last call.
-  drivingState = atoi(strtok(NULL, ":"));
-  turningState = atoi(strtok(NULL, ":"));
+  state = atoi(strtok(NULL, ":"));
 }
 
 void updatePins() {
   // The pin values are stored in the pinValues matrix
-  // The index for this matrix is derived from the state values...
-  int pinIndex = (drivingState - 100) * 3 + (turningState - 200);
+  // The index for this matrix is derived from the state value...
+  int pinIndex = (state - 100);
   int rightSideDir = pinValues[pinIndex][0];
   int leftSideDir  = pinValues[pinIndex][1];
   int rightSideSpd = pinValues[pinIndex][2];
