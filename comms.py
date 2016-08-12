@@ -236,9 +236,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     global stateLock, state, stateProgressChart
     action = self.path[1:]
-
+    stateLock.acquire()
     try:
-      stateLock.acquire()
       newState = stateProgressChart[state, action]
       if (newState == state):
         message = "NO CAN DO"
