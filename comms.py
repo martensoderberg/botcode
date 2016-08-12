@@ -10,26 +10,25 @@ import queue
 
 startTime = datetime.datetime.now()
 
-# Driving states:
-DRIVING_NOWHERE   = 100
-DRIVING_FORWARDS  = 101
-DRIVING_BACKWARDS = 102
-
-# Turning states:
-TURNING_NOWHERE   = 200
-TURNING_LEFT      = 201
-TURNING_RIGHT     = 202
-
 # States
-IDLE              = 100
-LEFT              = 101
-RIGHT             = 102
-FORWARDS          = 103
-FORWARDS_LEFT     = 104
-FORWARDS_RIGHT    = 105
-BACKWARDS         = 106
-BACKWARDS_LEFT    = 107
-BACKWARDS_RIGHT   = 108
+IDLE            = 0
+LEFT            = 1
+RIGHT           = 2
+FORWARDS        = 3
+FORWARDS_LEFT   = 4
+FORWARDS_RIGHT  = 5
+BACKWARDS       = 6
+BACKWARDS_LEFT  = 7
+BACKWARDS_RIGHT = 8
+
+# Message types
+LED_MSG    = 0x11
+STATE_MSG  = 0x22
+HALT_MSG   = 0x33
+STATUS_REQ = 0x44
+STATUS_MSG = 0x55
+ACK        = 0xEE
+SAY_AGAIN  = 0xFF
 
 # Actions
 DRIVE_FORWARDS  = "driveForwards"
@@ -171,24 +170,27 @@ class ArduinoCommsThread(threading.Thread):
 
   def sendMessage(self, message):
     ser = self.ser
-    ser.write(str.encode(message))
-    ser.write(bytes([0])) # terminate message with zero-byte (0x00)
-    print(getTimestamp() + ": Sent: " + message)
+    ser.write(message)
+    #print(getTimestamp() + ": Sent: " + str(message))
 
   def receiveMessage(self):
     ser = self.ser
     frame = bytearray()
-    stopByteEncountered = False
-    while not stopByteEncountered:
-      byte = ser.read(1)
-      if byte[0] == 0:
-        stopByteEncountered = True
-      else:
-        frame += byte
-    reply = frame.decode("utf-8")
-    print(getTimestamp() + ": Rcvd: " + reply)
+    commandByte = ser.read(1)
+    if commandByte[0] == SAY_AGAIN:
+      pass
+      # we should handle this somehow
+      print(getTimestamp() + ": Rcvd: SAY_AGAIN")
+    elif commandByte[0] == ACK:
+      pass
+      #print(getTimestamp() + ": Rcvd: ACK")
+    elif commandByte[0] == STATUS_MSG:
+      # we expect 10 more bytes!
+      status = ser.read(10)
+      # do nothing with them...
+      #print(getTimestamp() + ": Rcvd: STATUS_MSG")
     self.messagesReceived += 1
-    return reply
+    return
 
   def establishConnection(self):
     (success, ser) = self.tryArduinoConnection()
@@ -213,19 +215,20 @@ class ArduinoCommsThread(threading.Thread):
     self.establishConnection()
     i = 0
     while self.shouldIKeepGoing():
+      command = []
       stateLock.acquire()
-      command = "STATE:" + str(state)
+      command.append(STATE_MSG)
+      command.append(state)
       stateLock.release()
-
       try:
-        self.sendMessage(command)
+        self.sendMessage(bytes(command))
         self.receiveMessage()
       except serial.SerialException:
         self.connected = False
         self.establishConnection()
       i = i + 1
     if self.connected:
-      self.sendMessage("HALT")
+      self.sendMessage(bytes([HALT_MSG]))
       self.receiveMessage()
       self.ser.close()
 
@@ -285,7 +288,7 @@ def main():
     timePassed = (datetime.datetime.now() - startTime)
     secondsPassed = timePassed.seconds
     microseconds = timePassed.microseconds
-    msgPerSecond = msgsRcvd / (secondsPassed + (1000000 / microseconds))
+    msgPerSecond = msgsRcvd / (secondsPassed + (microseconds / 1000000))
     print("")
     print("Session terminated")
     print("Received " + str(msgsRcvd) + " messages in " + str(secondsPassed) + "." + str(microseconds)[:2] + " seconds.")
