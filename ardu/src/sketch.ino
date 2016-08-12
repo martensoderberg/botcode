@@ -153,6 +153,7 @@ void handleHaltMsg() {
   led.show();
 
   state = IDLE;
+  stateChanged = true;
 }
 
 // This function handles a state message
