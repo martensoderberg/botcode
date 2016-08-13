@@ -113,6 +113,19 @@ stateProgressChart[BACKWARDS_RIGHT, TURN_LEFT]       = BACKWARDS_RIGHT
 stateProgressChart[BACKWARDS_RIGHT, TURN_RIGHT]      = BACKWARDS_RIGHT
 stateProgressChart[BACKWARDS_RIGHT, STOP_TURNING]    = FORWARDS
 
+
+# Color chart for the LED, (r, g, b)
+ledColorChart = {}
+ledColorChart[IDLE]            = (  0,   0,   0)
+ledColorChart[LEFT]            = (  0,   0, 100)
+ledColorChart[RIGHT]           = (  0, 100,   0)
+ledColorChart[FORWARDS]        = (100,   0,   0)
+ledColorChart[FORWARDS_LEFT]   = (100,   0, 100)
+ledColorChart[FORWARDS_RIGHT]  = (100, 100,   0)
+ledColorChart[BACKWARDS]       = ( 50,  50,  50)
+ledColorChart[BACKWARDS_LEFT]  = ( 50,  50, 150)
+ledColorChart[BACKWARDS_RIGHT] = ( 50, 150,  50)
+
 state = IDLE
 stateLock = threading.Lock()
 
@@ -129,11 +142,14 @@ class ArduinoCommsThread(threading.Thread):
     self.keepGoing = True
     self.keepGoingLock = threading.Lock()
     self.messagesReceived = 0
+    self.messagesSent = 0
+    self.lastLEDMsgTime   = time.time()
+    self.lastStateMsgTime = time.time()
 
   def shouldIKeepGoing(self):
-    self.keepGoingLock.acquire() # begin mutex zone
+    self.keepGoingLock.acquire()
     wellShouldI = self.keepGoing
-    self.keepGoingLock.release() # stop mutex zone
+    self.keepGoingLock.release()
     return wellShouldI
 
   def halt(self):
@@ -169,26 +185,25 @@ class ArduinoCommsThread(threading.Thread):
     return (False, None) # nothing found
 
   def sendMessage(self, message):
-    ser = self.ser
-    ser.write(message)
-    #print(getTimestamp() + ": Sent: " + str(message))
+    self.ser.write(message)
+    self.messagesSent += 1
+    print(getTimestamp() + ": Sent: " + str(message))
 
   def receiveMessage(self):
-    ser = self.ser
     frame = bytearray()
-    commandByte = ser.read(1)
+    commandByte = self.ser.read(1)
     if commandByte[0] == SAY_AGAIN:
       pass
       # we should handle this somehow
       print(getTimestamp() + ": Rcvd: SAY_AGAIN")
     elif commandByte[0] == ACK:
       pass
-      #print(getTimestamp() + ": Rcvd: ACK")
+      print(getTimestamp() + ": Rcvd: ACK")
     elif commandByte[0] == STATUS_MSG:
       # we expect 10 more bytes!
-      status = ser.read(10)
+      status = self.ser.read(10)
       # do nothing with them...
-      #print(getTimestamp() + ": Rcvd: STATUS_MSG")
+      print(getTimestamp() + ": Rcvd: STATUS_MSG")
     self.messagesReceived += 1
     return
 
@@ -216,10 +231,28 @@ class ArduinoCommsThread(threading.Thread):
     i = 0
     while self.shouldIKeepGoing():
       command = []
-      stateLock.acquire()
-      command.append(STATE_MSG)
-      command.append(state)
-      stateLock.release()
+
+      # Build some kind of message!
+      timeNow = time.time()
+      # Has it been more than 0.1 seconds since the last LED message?
+      if (timeNow > self.lastLEDMsgTime + 0.1):
+        # Build a LED message! This gives us a LED update frequency of < 10 Hz
+        command.append(LED_MSG)
+        stateLock.acquire()
+        (r, g, b) = ledColorChart[state]
+        stateLock.release()
+        command.append(r)
+        command.append(g)
+        command.append(b)
+        self.lastLEDMsgTime = timeNow
+      else:
+        # Build a state message (default)
+        stateLock.acquire()
+        command.append(STATE_MSG)
+        command.append(state)
+        stateLock.release()
+        self.lastStateMsgTime = timeNow
+
       try:
         self.sendMessage(bytes(command))
         self.receiveMessage()
